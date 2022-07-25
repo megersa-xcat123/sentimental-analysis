@@ -1,115 +1,70 @@
-import re 
-import tweepy 
-from tweepy import OAuthHandler 
-from textblob import TextBlob 
-from textblob.sentiments import NaiveBayesAnalyzer
-
-from flask import Flask, render_template , redirect, url_for, request
-
-
-
-def clean_tweet( tweet): 
-
-        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t]) |(\w+:\/\/\S+)", " ", tweet).split()) 
-         
-def get_tweet_sentiment( tweet): 
-        
-        # analysis = TextBlob(clean_tweet(tweet), analyzer=NaiveBayesAnalyzer()) 
-
-        # if analysis.sentiment.classification == "pos": 
-        #     return 'positive'
-        # elif analysis.sentiment.classification == "neg": 
-        #     return 'negative'
-
-        analysis = TextBlob(clean_tweet(tweet)) 
-        if analysis.sentiment.polarity > 0:
-            return "positive"
-        elif analysis.sentiment.polarity == 0:
-            return "neutral"
-        else:
-            return "negative"
-
-
-def get_tweets(api, query, count=5): 
-        
-        count = int(count)
-        tweets = [] 
-        try: 
-            
-            fetched_tweets = tweepy.Cursor(api.search_tweets, q=query, lang ='en', tweet_mode='extended').items(count)
-            
-            for tweet in fetched_tweets: 
-                
-                parsed_tweet = {} 
-
-                if 'retweeted_status' in dir(tweet):
-                    parsed_tweet['text'] = tweet.retweeted_status.full_text
-                else:
-                    parsed_tweet['text'] = tweet.full_text
-
-                parsed_tweet['sentiment'] = get_tweet_sentiment(parsed_tweet['text']) 
-
-                if tweet.retweet_count > 0: 
-                    if parsed_tweet not in tweets: 
-                        tweets.append(parsed_tweet) 
-                else: 
-                    tweets.append(parsed_tweet) 
-            return tweets 
-        except tweepy.TweepyException as e: 
-            print("Error : " + str(e)) 
-
+from flask import Flask, request,render_template, jsonify
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import  load_model
+from sklearn.feature_extraction.text import TfidfVectorizer
+from Sentimental_Analysis_DL import sentiment_label
+import  pickle
+import  package as pkg
+#create flask APP
+from textblob import TextBlob
+filename = "Saved_Model.h5"
 app = Flask(__name__)
-app.static_folder = 'static'
-
-@app.route('/')
+#load the model
+model = pickle.load(open("model.pkl", "rb"))
+loaded_model = load_model(filename)
+@app.route("/")
 def home():
-  return render_template("index.html")
-
-# ******Phrase level sentiment analysis
+    return render_template("index.html")
 @app.route("/predict", methods=['POST','GET'])
-def pred():
-	if request.method=='POST':
-            query=request.form['query']
-            count=request.form['num']
-            fetched_tweets = get_tweets(api,query, count) 
-            return render_template('result.html', result=fetched_tweets)
+def predict():
+    if request.method=='POST':
+        query = request.form['amh']
+        tokenizer = Tokenizer()
+         #sentiment_label =
+        tw = tokenizer.texts_to_sequences([query])
+        tw = pad_sequences(tw,maxlen=200)
+        #prediction = int(model.predict(tw).round().item())
+        #acc = loaded_model.evaluate()
+        prediction = int(loaded_model.predict(tw).round().item())
+        value = sentiment_label[1][prediction]
+        vectorizer = TfidfVectorizer()
+        vectorizer.fit(query)
+        X = vectorizer.transform(query)
 
-# fetched_tweets
-# [
-#   {"text" : "tweet1", "sentiment" : "sentiment1"},
-#   {"text" : "tweet2", "sentiment" : "sentiment2"},
-#   {"text" : "tweet3", "sentiment" : "sentiment3"}
-# ]
 
-# *******Sentence level sentiment analysis
-@app.route("/predict1", methods=['POST','GET'])
-def pred1():
-	if request.method=='POST':
-            text = request.form['txt']
-            blob = TextBlob(text)
-            if blob.sentiment.polarity > 0:
-                text_sentiment = "positive"
-            elif blob.sentiment.polarity == 0:
-                text_sentiment = "neutral"
-            else:
-                text_sentiment = "negative"
-            return render_template('result1.html',msg=text, result=text_sentiment)
+
+
+
+
+
+
+
+       # blob = pkg.TextBlobSentiment()
+        #result = blob.predict(query)
+       # result
+        #
+        # sent = blob.sentiment
+        #
+        # pol = blob.sentiment.polarity
+        #
+        #
+        #
+        # if pol > 0:
+        #     text_sentiment = "positive"
+        # elif pol == 0:
+        #     text_sentiment = "neutral"
+        # else:
+        #     text_sentiment = "negative"
+        #
+        # if prediction > 0:
+        #     text_sentiment = "Positive"
+        # elif prediction == 0:
+        #     text_sentiment = "Neutral"
+        # else:
+        #     text_sentiment = "Negative"
+    return  render_template("index.html",msg=query,prediction_test = "the text status is: {}".format(value))
 
 
 if __name__ == '__main__':
-    
-    consumer_key = 'EwG6T8KZTCuSfv6Wy2rfUu1gO' 
-    consumer_secret = 'R8dREd4HyxY6flL3OOHktuEfkTAXj66HZ5QGWGUsmoKfcaNhND'
-    access_token = '405461195-HdMbZqc7YmMP5yTMG5rix5nrahxGP72WG9VjF6w1'
-    access_token_secret = '9Zl6g93TtRvH3voFlOd6pbDwFGZ5A7YLDJnogrkm1O0NT'
-
-    try: 
-        auth = OAuthHandler(consumer_key, consumer_secret)  
-        auth.set_access_token(access_token, access_token_secret) 
-        api = tweepy.API(auth)
-    except: 
-        print("Error: Authentication Failed") 
-
-    app.debug=True
-    app.run(host='localhost')
-
+    app.run(debug=False)

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentimental Analysis</title>
+</head>
+<body>
+    <table align="center" bgcolor="blueblack" width="600px" height="500px">
+        <tr> 
+            <td><h1>Amharic Text Analysis (Negative, Positve)</h1></td>
+        </tr>
+        <tr>
+        <br />
+            <form action="{{url_for('predict')}}" method="post">
+                <td><input type="text" name="amh" placeholder="Type Here" required="required" /></td> </tr>
+        <tr>     
+                <td><button type="submit" class="btn btn-primary btn-block btn-large">Predict</button></td>
+            </form>
+
+        </tr>
+        <tr>
+        <td align="center">{{msg}} {{prediction_test}}</td>
+        </tr>
+        
+    </table>
+
+</body>
+</html>
