@@ -1,3 +1,4 @@
-# sentimental-analysis of information on social media
-## type in the text bex the user name  of twitter user and enter the amount of information analyzed 
-## and then click on the button to get the information is positive, negative, or neutral
+## Sentimental-analysis  on social media  amharic content
+## Categorize the contents of the text into Positive, Negative, or Neutral
+## we collect data manually from Social media, and organize into Training dataset (630) and Testing dataset (300)
+## Testing this data using different machine learning (LogisticRegression, NaiveBayes)
